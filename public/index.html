@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>GAZ Walkie-Talkie</title>
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Walkie">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --panel2:#1f232c; --line:#262a33; --text:#eef0f3; --muted:#8b919c;
+    --accent:#ff8a1f; --accent-dim:#4a2a0c; --live:#2fd27a; --busy:#ff4d4f; --private:#9b7bff; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  .hidden { display: none !important; }
+  .screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.02em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; font-weight: 600; }
+  p.sub { margin: 0 0 18px; color: var(--muted); }
+  label { font-size: 13px; color: var(--muted); display: block; margin: 10px 0 6px; }
+  input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 17px; outline: none; }
+  input:focus { border-color: var(--accent); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 16px; border: 0; border-radius: 12px;
+    background: var(--accent); color: #1a0d00; font-weight: 700; font-size: 16px; cursor: pointer; }
+  .btn.block { width: 100%; margin-top: 14px; }
+  .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); font-weight: 600; }
+  .btn.small { padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+  .btn.ok { background: var(--live); color: #04210f; }
+  .btn.danger { background: transparent; border: 1px solid #5a2326; color: var(--busy); }
+  .btn:disabled { opacity: .5; }
+  .err { color: var(--busy); font-size: 14px; min-height: 20px; margin-top: 8px; }
+  .tabs { display: flex; gap: 6px; background: var(--panel); padding: 4px; border-radius: 12px; margin-bottom: 8px; }
+  .tabs button { flex: 1; padding: 10px; border: 0; border-radius: 9px; background: none; color: var(--muted); font-weight: 600; font-size: 15px; }
+  .tabs button.on { background: var(--panel2); color: var(--text); }
+
+  header.bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  header.bar .title { font-weight: 700; font-size: 18px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header.bar button { background: none; border: 1px solid var(--line); color: var(--muted); padding: 7px 11px; border-radius: 10px; font-size: 14px; }
+  header.bar .back { border: 0; font-size: 22px; padding: 2px 8px 2px 0; color: var(--text); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--busy); flex: none; }
+  .dot.on { background: var(--live); }
+  .scroll { flex: 1; overflow-y: auto; padding: 6px 16px 24px; }
+
+  .card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--panel); margin-bottom: 8px; cursor: pointer; }
+  .card .av { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-dim); color: var(--accent); display: grid; place-items: center; font-weight: 800; flex: none; }
+  .card .main { flex: 1; min-width: 0; }
+  .card .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .meta { font-size: 13px; color: var(--muted); }
+  .badge { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: var(--panel2); color: var(--muted); white-space: nowrap; }
+  .badge.owner { color: var(--accent); }
+  .badge.alert { background: var(--busy); color: #fff; }
+  .empty { color: var(--muted); font-size: 14px; padding: 10px 2px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row input { flex: 1; }
+
+  /* radio */
+  #members { flex: 1; overflow-y: auto; padding: 8px 12px; }
+  .hint { color: var(--muted); font-size: 13px; padding: 4px 6px 10px; }
+  .m { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; cursor: pointer; }
+  .m:active { background: var(--panel); }
+  .m.sel { background: #231c38; outline: 1px solid var(--private); }
+  .m .av { width: 36px; height: 36px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font-weight: 700; color: var(--accent); flex: none; }
+  .m .nm { flex: 1; }
+  .m .tag { font-size: 12px; color: var(--muted); }
+  .m.talking .av { background: var(--live); color: #04210f; }
+  #dock { padding: 12px 18px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; border-top: 1px solid var(--line); }
+  #status { min-height: 22px; font-size: 15px; color: var(--muted); text-align: center; }
+  #status.live { color: var(--live); font-weight: 600; } #status.busy { color: var(--busy); font-weight: 600; } #status.priv { color: var(--private); font-weight: 600; }
+  #ptt { width: 164px; height: 164px; border-radius: 50%; border: 6px solid var(--accent-dim); background: radial-gradient(circle at 50% 35%, #ffa04d, var(--accent));
+    color: #1a0d00; font-weight: 800; font-size: 18px; touch-action: none; user-select: none; -webkit-user-select: none;
+    box-shadow: 0 10px 30px rgba(255,138,31,.25); transition: transform .08s, background .15s; }
+  #ptt.private { background: radial-gradient(circle at 50% 35%, #b69dff, var(--private)); border-color: #2b2147; }
+  #ptt.down { transform: scale(.95); background: radial-gradient(circle at 50% 35%, #5fe69b, var(--live)); border-color: #0c3a20; }
+  #ptt.blocked { background: #3a3d45; color: #8b919c; box-shadow: none; }
+  #ptt small { display: block; font-weight: 600; font-size: 12px; opacity: .75; margin-top: 2px; }
+  #level { width: 164px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  #level i { display: block; height: 100%; width: 0; background: var(--live); transition: width .05s; }
+  #dbg { font-size: 12px; color: var(--muted); }
+
+  /* manage sheet */
+  .code { font: 700 38px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .18em; text-align: center; padding: 16px; background: var(--panel); border-radius: 14px; }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--line);
+    padding: 11px 16px; border-radius: 12px; font-size: 14px; max-width: 90%; z-index: 9; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="sAuth" class="screen">
+  <div class="wrap scroll" style="display:flex;flex-direction:column;justify-content:center;padding:28px">
+    <h1>📻 GAZ Walkie-Talkie</h1>
+    <p class="sub">Push-to-talk for your team. Log in or create an account.</p>
+    <div class="tabs"><button id="tabLogin" class="on">Log in</button><button id="tabReg">Create account</button></div>
+    <label for="uName">Username</label>
+    <input id="uName" autocomplete="username" autocapitalize="none" maxlength="20" placeholder="e.g. gaz">
+    <label for="uPass">Password</label>
+    <input id="uPass" type="password" autocomplete="current-password" maxlength="64" placeholder="At least 6 characters">
+    <button class="btn block" id="authBtn">Log in</button>
+    <div class="err" id="authErr"></div>
+  </div>
+</section>
+
+<!-- ============ HOME ============ -->
+<section id="sHome" class="screen hidden">
+  <header class="bar"><span class="dot" id="connH"></span><span class="title" id="hello">My groups</span><button id="logoutBtn">Log out</button></header>
+  <div class="wrap scroll">
+    <h2>My groups</h2>
+    <div id="myGroups"></div>
+    <button class="btn ghost block" id="newGroupBtn">＋ Create a group</button>
+    <div id="createBox" class="hidden">
+      <label for="gName">Group name</label>
+      <div class="row"><input id="gName" maxlength="30" placeholder="e.g. Lagos Security Team"><button class="btn" id="createBtn">Create</button></div>
+      <div class="err" id="createErr"></div>
+    </div>
+    <h2>Find a group</h2>
+    <input id="q" placeholder="Search by group name" autocapitalize="none">
+    <div id="results" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ============ GROUP / RADIO ============ -->
+<section id="sRadio" class="screen hidden">
+  <header class="bar">
+    <button class="back" id="backBtn" aria-label="Back">‹</button>
+    <span class="dot" id="conn"></span>
+    <span class="title" id="gTitle"></span>
+    <button id="manageBtn">Manage</button>
+  </header>
+  <div id="members"></div>
+  <div id="dock">
+    <div id="status">Hold to talk</div>
+    <button id="ptt">HOLD<small>to talk</small></button>
+    <div id="level"><i></i></div>
+    <div id="dbg">audio: –</div>
+  </div>
+</section>
+
+<!-- ============ MANAGE ============ -->
+<section id="sManage" class="screen hidden">
+  <header class="bar"><button class="back" id="mBack" aria-label="Back">‹</button><span class="title" id="mTitle"></span></header>
+  <div class="wrap scroll" id="mBody"></div>
+</section>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+(() => {
+  // Where the relay/API lives. When this page is served from the relay itself, use the same address.
+  const API = location.hostname.endsWith("workers.dev") ? "" : "https://gaz-walkie.ioghenevwogaga.workers.dev";
+  const RATE = 8000, CHUNK = 320;     // 8 kHz mu-law, 40 ms packets
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+    set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} },
+  };
+
+  let token = store.get("wt_token"), me = null, groups = [], current = null, details = null;
+  let ws = null, retry = 0, myId = null, target = null, targetName = "";
+  let ctx = null, out = null, micNode = null, talking = false, granted = false, pressed = false;
+  let members = [], speaker = null, playTime = 0, rx = 0, wakeLock = null;
+
+  // ================================================================ helpers
+  function show(id) { for (const s of ["sAuth", "sHome", "sRadio", "sManage"]) $(s).classList.toggle("hidden", s !== id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  let toastT;
+  function toast(t) { const el = $("toast"); el.textContent = t; el.classList.remove("hidden"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.add("hidden"), 3500); }
+
+  async function api(method, path, body) {
+    const r = await fetch(API + "/api" + path, {
+      method, headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const j = await r.json().catch(() => ({ error: "Network problem. Check your internet." }));
+    if (r.status === 401 && path !== "/login") { logout(true); }
+    if (!r.ok) throw new Error(j.error || "Something went wrong.");
+    return j;
+  }
+
+  // ================================================================ login
+  let mode = "login";
+  $("tabLogin").onclick = () => { mode = "login"; $("tabLogin").classList.add("on"); $("tabReg").classList.remove("on"); $("authBtn").textContent = "Log in"; $("uPass").autocomplete = "current-password"; };
+  $("tabReg").onclick = () => { mode = "register"; $("tabReg").classList.add("on"); $("tabLogin").classList.remove("on"); $("authBtn").textContent = "Create account"; $("uPass").autocomplete = "new-password"; };
+  $("uPass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("authBtn").click(); });
+  $("authBtn").onclick = async () => {
+    $("authErr").textContent = ""; $("authBtn").disabled = true;
+    try {
+      const j = await api("POST", "/" + mode, { username: $("uName").value.trim(), password: $("uPass").value });
+      token = j.token; store.set("wt_token", token); $("uPass").value = "";
+      await startSession();
+    } catch (e) { $("authErr").textContent = e.message; }
+    $("authBtn").disabled = false;
+  };
+
+  async function startSession() {
+    try { await loadMe(); } catch { show("sAuth"); return; }
+    show("sHome");
+    connect();
+  }
+
+  function logout(expired) {
+    if (token && !expired) api("POST", "/logout").catch(() => {});
+    token = ""; store.set("wt_token", ""); me = null; current = null;
+    if (ws) { ws.onclose = null; ws.close(); ws = null; }
+    show("sAuth");
+    if (expired) $("authErr").textContent = "Please log in again.";
+  }
+  $("logoutBtn").onclick = () => logout(false);
+
+  // ================================================================ home
+  async function loadMe() {
+    const j = await api("GET", "/me");
+    me = j.user; groups = j.groups;
+    $("hello").textContent = "Hi, " + me.username;
+    renderGroups();
+  }
+
+  function renderGroups() {
+    if (!groups.length) { $("myGroups").innerHTML = `<div class="empty">You're not in any group yet. Create one, or search for a group below.</div>`; return; }
+    $("myGroups").innerHTML = groups.map((g) => `
+      <div class="card" data-open="${g.id}">
+        <div class="av">${esc(g.name[0].toUpperCase())}</div>
+        <div class="main"><div class="nm">${esc(g.name)}</div>
+          <div class="meta">${g.members} member${g.members === 1 ? "" : "s"} · ${g.online} online</div></div>
+        ${g.pending ? `<span class="badge alert">${g.pending} request${g.pending === 1 ? "" : "s"}</span>` : ""}
+        ${g.role === "owner" ? `<span class="badge owner">Owner</span>` : ""}
+      </div>`).join("");
+  }
+  $("myGroups").addEventListener("click", (e) => { const c = e.target.closest("[data-open]"); if (c) openGroup(c.dataset.open); });
+
+  $("newGroupBtn").onclick = () => { $("createBox").classList.toggle("hidden"); $("gName").focus(); };
+  $("createBtn").onclick = async () => {
+    $("createErr").textContent = "";
+    try {
+      const g = await api("POST", "/groups", { name: $("gName").value });
+      $("gName").value = ""; $("createBox").classList.add("hidden");
+      await loadMe(); details = g; current = g.id; openManage();
+      toast("Group created. Share the access code with your team.");
+    } catch (e) { $("createErr").textContent = e.message; }
+  };
+
+  let searchT;
+  $("q").addEventListener("input", () => { clearTimeout(searchT); searchT = setTimeout(search, 300); });
+  async function search() {
+    const q = $("q").value.trim();
+    if (q.length < 2) { $("results").innerHTML = ""; return; }
+    try {
+      const { groups: list } = await api("GET", "/groups/search?q=" + encodeURIComponent(q));
+      if (!list.length) { $("results").innerHTML = `<div class="empty">No group found with that name.</div>`; return; }
+      $("results").innerHTML = list.map((g) => `
+        <div class="card" style="flex-wrap:wrap;cursor:default">
+          <div class="av">${esc(g.name[0].toUpperCase())}</div>
+          <div class="main"><div class="nm">${esc(g.name)}</div><div class="meta">by ${esc(g.owner)} · ${g.members} member${g.members === 1 ? "" : "s"}</div></div>
+          ${g.member ? `<button class="btn small" data-open="${g.id}">Open</button>` : ""}
+          ${!g.member ? `<div class="row" style="width:100%;margin-top:6px">
+              <input inputmode="numeric" maxlength="6" placeholder="Access code" data-code="${g.id}" style="padding:10px 12px;font-size:16px">
+              <button class="btn small" data-join="${g.id}">Join</button>
+              <button class="btn small ghost" data-req="${g.id}" ${g.requested ? "disabled" : ""}>${g.requested ? "Requested" : "Request"}</button>
+            </div><div class="err" data-err="${g.id}" style="width:100%;min-height:0"></div>` : ""}
+        </div>`).join("");
+    } catch (e) { $("results").innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  }
+  $("results").addEventListener("click", async (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.open) return openGroup(b.dataset.open);
+    const id = b.dataset.join || b.dataset.req, errEl = document.querySelector(`[data-err="${id}"]`);
+    try {
+      if (b.dataset.join) {
+        await api("POST", `/groups/${id}/join`, { code: document.querySelector(`[data-code="${id}"]`).value.trim() });
+        await loadMe(); toast("You joined the group!"); $("q").value = ""; $("results").innerHTML = ""; openGroup(id);
+      } else if (b.dataset.req) {
+        await api("POST", `/groups/${id}/request`); b.textContent = "Requested"; b.disabled = true;
+        toast("Request sent. The owner will let you in, or send you the access code.");
+      }
+    } catch (err) { if (errEl) errEl.textContent = err.message; }
+  });
+
+  // ================================================================ group / radio
+  async function openGroup(id) {
+    await unlockAudio();
+    current = id; setTarget(null); members = []; speaker = null; render();
+    const g = groups.find((x) => x.id === id);
+    $("gTitle").textContent = g ? g.name : "Group";
+    $("manageBtn").textContent = g && g.role === "owner" ? "Manage" : "Info";
+    show("sRadio");
+    send({ t: "join", group: id });
+    keepAwake();
+  }
+  $("backBtn").onclick = () => { stopTalk(); current = null; send({ t: "join", group: "" }); show("sHome"); loadMe().catch(() => {}); };
+
+  // ================================================================ manage
+  async function openManage() {
+    try { details = await api("GET", "/groups/" + current); } catch (e) { toast(e.message); return; }
+    renderManage(); show("sManage");
+  }
+  $("manageBtn").onclick = openManage;
+  $("mBack").onclick = () => openGroup(current);
+
+  function renderManage() {
+    const d = details; $("mTitle").textContent = d.name;
+    let h = "";
+    if (d.isOwner) {
+      h += `<h2>Access code</h2><div class="code">${esc(d.code)}</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="shareCode" style="flex:1">Share code</button>
+          <button class="btn ghost" id="newCode">New code</button>
+        </div>
+        <p class="sub" style="margin-top:8px;font-size:13px">People search for “${esc(d.name)}” and enter this code to join. Changing it stops the old code working.</p>`;
+      h += `<h2>Requests (${d.requests.length})</h2>`;
+      h += d.requests.length ? d.requests.map((r) => `
+        <div class="card" style="cursor:default"><div class="av">${esc(r.username[0].toUpperCase())}</div>
+          <div class="main"><div class="nm">${esc(r.username)}</div><div class="meta">wants to join</div></div>
+          <button class="btn small ok" data-approve="${r.id}">Accept</button><button class="btn small ghost" data-reject="${r.id}">✕</button></div>`).join("")
+        : `<div class="empty">No requests right now.</div>`;
+    } else {
+      h += `<p class="sub" style="margin-top:14px">Owner: <b>${esc(d.owner)}</b></p>`;
+    }
+    h += `<h2>Members (${d.members.length})</h2>`;
+    h += d.members.map((m) => `
+      <div class="card" style="cursor:default"><div class="av">${esc(m.username[0].toUpperCase())}</div>
+        <div class="main"><div class="nm">${esc(m.username)}${m.id === me.id ? " (you)" : ""}</div>
+          <div class="meta">${m.role === "owner" ? "Owner" : "Member"} · ${m.online ? "🟢 online" : "offline"}</div></div>
+        ${d.isOwner && m.role !== "owner" ? `<button class="btn small danger" data-remove="${m.id}" data-name="${esc(m.username)}">Remove</button>` : ""}
+      </div>`).join("");
+    h += d.isOwner ? `<button class="btn danger block" id="delGroup" style="margin-top:26px">Delete group</button>`
+                   : `<button class="btn danger block" id="leaveGroup" style="margin-top:26px">Leave group</button>`;
+    $("mBody").innerHTML = h;
+  }
+
+  $("mBody").addEventListener("click", async (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const d = details;
+    try {
+      if (b.id === "shareCode") {
+        const text = `Join my walkie-talkie group “${d.name}” on GAZ Walkie-Talkie.\n1. Open ${location.origin}${location.pathname}\n2. Create an account and search “${d.name}”\n3. Enter access code: ${d.code}`;
+        if (navigator.share) await navigator.share({ text }).catch(() => {});
+        else { await navigator.clipboard.writeText(text).catch(() => {}); toast("Invite copied. Paste it in WhatsApp."); }
+      } else if (b.id === "newCode") {
+        if (!confirmTap(b, "Tap again to change")) return;
+        details = await api("POST", `/groups/${d.id}/code`); renderManage(); toast("New code made. The old one no longer works.");
+      } else if (b.dataset.approve) {
+        details = await api("POST", `/groups/${d.id}/approve`, { userId: b.dataset.approve }); renderManage(); toast("Accepted.");
+      } else if (b.dataset.reject) {
+        details = await api("POST", `/groups/${d.id}/reject`, { userId: b.dataset.reject }); renderManage();
+      } else if (b.dataset.remove) {
+        if (!confirmTap(b, "Sure?")) return;
+        details = await api("POST", `/groups/${d.id}/remove`, { userId: b.dataset.remove }); renderManage(); toast(b.dataset.name + " removed.");
+      } else if (b.id === "delGroup") {
+        if (!confirmTap(b, "Tap again to delete for everyone")) return;
+        await api("POST", `/groups/${d.id}/delete`); current = null; await loadMe(); show("sHome"); toast("Group deleted.");
+      } else if (b.id === "leaveGroup") {
+        if (!confirmTap(b, "Tap again to leave")) return;
+        await api("POST", `/groups/${d.id}/leave`); current = null; await loadMe(); show("sHome"); toast("You left the group.");
+      }
+    } catch (err) { toast(err.message); }
+  });
+  // two-tap confirm (avoids browser pop-up dialogs)
+  function confirmTap(b, label) {
+    if (b.dataset.armed) return true;
+    b.dataset.armed = "1"; const old = b.textContent; b.textContent = label;
+    setTimeout(() => { delete b.dataset.armed; b.textContent = old; }, 3000);
+    return false;
+  }
+
+  // ================================================================ mu-law codec
+  function linToMu(s) {
+    const BIAS = 0x84, CLIP = 32635;
+    let sign = (s >> 8) & 0x80; if (sign) s = -s; if (s > CLIP) s = CLIP; s += BIAS;
+    let exp = 7; for (let m = 0x4000; (s & m) === 0 && exp > 0; m >>= 1) exp--;
+    const man = (s >> (exp + 3)) & 0x0f;
+    return ~(sign | (exp << 4) | man) & 0xff;
+  }
+  const MU2LIN = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const u = ~i & 0xff, sign = u & 0x80, exp = (u >> 4) & 7, man = u & 0x0f;
+    let s = ((man << 3) + 0x84) << exp; s -= 0x84;
+    MU2LIN[i] = (sign ? -s : s) / 32768;
+  }
+
+  // ================================================================ audio
+  const WORKLET = `
+    class Mic extends AudioWorkletProcessor {
+      constructor() { super(); this.ratio = sampleRate / ${RATE}; this.acc = 0; this.n = 0; this.pos = 0; this.out = new Float32Array(${CHUNK}); this.k = 0; }
+      process(inputs) {
+        const ch = inputs[0] && inputs[0][0]; if (!ch) return true;
+        for (let i = 0; i < ch.length; i++) {
+          this.acc += ch[i]; this.n++; this.pos += 1;
+          if (this.pos >= this.ratio) { this.pos -= this.ratio; this.out[this.k++] = this.acc / this.n; this.acc = 0; this.n = 0;
+            if (this.k === ${CHUNK}) { this.port.postMessage(this.out.slice(0)); this.k = 0; } }
+        }
+        return true;
+      }
+    }
+    registerProcessor("mic", Mic);`;
+
+  async function unlockAudio() {
+    if (ctx) { if (ctx.state !== "running") await ctx.resume().catch(() => {}); return; }
+    try { if (navigator.audioSession) navigator.audioSession.type = "play-and-record"; } catch {}
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC(); await ctx.resume().catch(() => {});
+    out = ctx.createGain(); out.gain.value = 1.8; out.connect(ctx.destination);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+      const url = URL.createObjectURL(new Blob([WORKLET], { type: "text/javascript" }));
+      await ctx.audioWorklet.addModule(url);
+      micNode = new AudioWorkletNode(ctx, "mic");
+      micNode.port.onmessage = (e) => onMicChunk(e.data);
+      ctx.createMediaStreamSource(stream).connect(micNode);
+      const mute = ctx.createGain(); mute.gain.value = 0; micNode.connect(mute).connect(ctx.destination);
+    } catch { toast("Microphone blocked. You can listen, but allow the mic in your browser settings to talk."); }
+  }
+
+  function onMicChunk(f32) {
+    if (!talking || !granted || !ws || ws.readyState !== 1) { level(0); return; }
+    const o = new Uint8Array(f32.length); let peak = 0;
+    for (let i = 0; i < f32.length; i++) { const v = Math.max(-1, Math.min(1, f32[i])); peak = Math.max(peak, Math.abs(v)); o[i] = linToMu(Math.round(v * 32767)); }
+    level(peak); ws.send(o);
+  }
+
+  function playChunk(buf) {
+    if (!ctx) return;
+    rx++; if (ctx.state !== "running") ctx.resume();
+    const mu = new Uint8Array(buf), ratio = ctx.sampleRate / RATE;
+    const n = Math.floor(mu.length * ratio), ab = ctx.createBuffer(1, n, ctx.sampleRate), d = ab.getChannelData(0);
+    for (let i = 0; i < n; i++) { const p = i / ratio, j = Math.floor(p), f = p - j; const a = MU2LIN[mu[j]], b = MU2LIN[mu[Math.min(j + 1, mu.length - 1)]]; d[i] = a + (b - a) * f; }
+    const s = ctx.createBufferSource(); s.buffer = ab; s.connect(out || ctx.destination);
+    const now = ctx.currentTime;
+    if (playTime < now + 0.03) playTime = now + 0.15;
+    if (playTime > now + 0.8) playTime = now + 0.15;
+    s.start(playTime); playTime += ab.duration;
+  }
+
+  function beep(freq, ms, when = 0) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + when;
+    o.frequency.value = freq; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000); o.connect(g).connect(out || ctx.destination); o.start(t); o.stop(t + ms / 1000 + 0.02);
+  }
+  const chirpStart = () => { beep(880, 60); beep(1320, 70, 0.07); };
+  const chirpEnd = () => { beep(1320, 50); beep(880, 80, 0.06); };
+  const buzz = () => { beep(220, 120); beep(220, 120, 0.16); };
+  function level(p) { $("level").firstChild.style.width = Math.min(100, p * 140) + "%"; }
+  function dbg() { if (ctx) $("dbg").textContent = "audio: " + ctx.state + " · heard " + rx + " packets" + (ws && ws.readyState === 1 ? " · online" : " · offline"); }
+  setInterval(dbg, 1000);
+  document.addEventListener("pointerdown", () => { if (ctx && ctx.state !== "running") ctx.resume(); }, true);
+
+  // ================================================================ connection
+  function connect() {
+    if (!token) return;
+    const base = API ? API.replace(/^http/, "ws") : location.origin.replace(/^http/, "ws");
+    ws = new WebSocket(base + "/ws?token=" + encodeURIComponent(token));
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => { retry = 0; setConn(true); if (current) send({ t: "join", group: current }); };
+    ws.onclose = () => {
+      setConn(false); granted = false; speaker = null; render();
+      if (token) { if (current) setStatus("Reconnecting…", "busy"); setTimeout(connect, Math.min(8000, 500 * 2 ** retry++)); }
+    };
+    ws.onmessage = (e) => {
+      if (typeof e.data !== "string") { if (current) playChunk(e.data); return; }
+      const m = JSON.parse(e.data);
+      if (m.t === "welcome") myId = m.id;
+      else if (m.t === "members") { if (m.channel !== current) return; members = m.list; if (target && !members.some((x) => x.id === target)) setTarget(null); render(); }
+      else if (m.t === "granted") { granted = true; if (pressed) { chirpStart(); setStatus(target ? `🔒 Talking to ${targetName}` : "● You're live", target ? "priv" : "live"); } else stopTalk(); }
+      else if (m.t === "busy") { granted = false; talking = false; $("ptt").classList.remove("down"); level(0); buzz(); $("ptt").classList.add("blocked"); setStatus(`${m.by} is talking — wait`, "busy"); setTimeout(() => { $("ptt").classList.remove("blocked"); if (!talking && !speaker) idleStatus(); }, 1500); }
+      else if (m.t === "speaking") { speaker = m; playTime = 0; if (ctx && ctx.state !== "running") ctx.resume(); setStatus((m.private ? "🔒 " : "🔊 ") + m.name + (m.private ? " (private)" : ""), m.private ? "priv" : "live"); render(); }
+      else if (m.t === "quiet") { if (speaker && speaker.id === m.id) { speaker = null; chirpEnd(); idleStatus(); render(); } }
+      else if (m.t === "kicked") { if (m.group === current) { current = null; show("sHome"); } if (m.message) toast(m.message); loadMe().catch(() => {}); }
+      else if (m.t === "request") { toast(`${m.from} wants to join ${m.groupName}`); loadMe().catch(() => {}); if (details && details.id === m.group && !$("sManage").classList.contains("hidden")) openManage(); }
+      else if (m.t === "approved") { toast(`You were accepted into ${m.groupName}!`); loadMe().catch(() => {}); }
+      else if (m.t === "groups-changed") { loadMe().catch(() => {}); }
+    };
+  }
+  const send = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+  function setConn(on) { $("conn").classList.toggle("on", on); $("connH").classList.toggle("on", on); }
+
+  // ================================================================ radio UI
+  function setStatus(t, cls = "") { const s = $("status"); s.textContent = t; s.className = cls; }
+  function idleStatus() { setStatus(target ? `Private: hold to talk to ${targetName}` : "Hold to talk to everyone"); }
+  function setTarget(id) {
+    const m = members.find((x) => x.id === id);
+    target = m ? m.id : null; targetName = m ? m.name : "";
+    $("ptt").classList.toggle("private", !!target);
+    $("ptt").innerHTML = target ? `HOLD<small>to ${esc(targetName)}</small>` : "HOLD<small>to talk</small>";
+    if (!talking && !speaker) idleStatus();
+    render();
+  }
+  function render() {
+    const others = members.filter((x) => x.id !== myId);
+    let h = `<div class="hint">${members.length} online · tap someone to talk privately</div>`;
+    for (const m of members) {
+      const mine = m.id === myId, isTalking = m.talking || (speaker && speaker.id === m.id);
+      h += `<div class="m${target === m.id ? " sel" : ""}${isTalking ? " talking" : ""}" data-id="${mine ? "" : m.id}">
+        <div class="av">${esc(m.name.slice(0, 1).toUpperCase())}</div>
+        <div class="nm">${esc(m.name)}${mine ? " (you)" : ""}</div>
+        <div class="tag">${isTalking ? "talking…" : target === m.id ? "private" : ""}</div></div>`;
+    }
+    if (!others.length) h += `<div class="hint">Nobody else is online in this group right now.</div>`;
+    $("members").innerHTML = h;
+  }
+  $("members").addEventListener("click", (e) => { const el = e.target.closest(".m"); if (el && el.dataset.id) setTarget(target === el.dataset.id ? null : el.dataset.id); });
+
+  async function startTalk() {
+    if (talking || !ws || ws.readyState !== 1 || !current) return;
+    if (speaker && !speaker.private) { buzz(); setStatus(`${speaker.name} is talking — wait`, "busy"); return; }
+    if (ctx && ctx.state !== "running") await ctx.resume();
+    pressed = true; talking = true; granted = false;
+    $("ptt").classList.add("down");
+    send({ t: "talk", to: target || undefined });
+  }
+  function stopTalk() {
+    pressed = false;
+    if (!talking) return;
+    talking = false; $("ptt").classList.remove("down"); level(0);
+    send({ t: "stop" });
+    if (granted) chirpEnd();
+    granted = false;
+    if (!speaker) idleStatus();
+  }
+  const ptt = $("ptt");
+  ptt.addEventListener("pointerdown", (e) => { e.preventDefault(); ptt.setPointerCapture(e.pointerId); startTalk(); });
+  ptt.addEventListener("pointerup", stopTalk);
+  ptt.addEventListener("pointercancel", stopTalk);
+  ptt.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.addEventListener("keydown", (e) => { if (e.code === "Space" && !e.repeat && current && !$("sRadio").classList.contains("hidden") && document.activeElement.tagName !== "INPUT") { e.preventDefault(); startTalk(); } });
+  document.addEventListener("keyup", (e) => { if (e.code === "Space") stopTalk(); });
+
+  async function keepAwake() { try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch {} }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !token) return;
+    if (current) keepAwake();
+    if (ctx && ctx.state !== "running") ctx.resume();
+    if (!ws || ws.readyState > 1) connect();
+  });
+  setInterval(() => send({ t: "ping" }), 20000);
+
+  // ================================================================ start
+  if (token) startSession(); else show("sAuth");
+})();
+</script>
+</body>
+</html>
