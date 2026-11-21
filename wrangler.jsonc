@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers config for the GAZ Walkie-Talkie relay.
+  "name": "gaz-walkie",
+  "main": "worker.js",
+  "compatibility_date": "2025-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "RELAY", "class_name": "Relay" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Relay"] }],
+  "workers_dev": true
+}
