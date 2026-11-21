@@ -1,8 +1,9 @@
 {
-  // Cloudflare Workers config for the GAZ Walkie-Talkie relay.
+  // Cloudflare Workers config for the GAZ Walkie-Talkie relay + web app.
   "name": "gaz-walkie",
   "main": "worker.js",
   "compatibility_date": "2025-10-01",
+  "assets": { "directory": "./public" },
   "durable_objects": {
     "bindings": [{ "name": "RELAY", "class_name": "Relay" }]
   },
